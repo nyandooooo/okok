@@ -1,6 +1,7 @@
 <?php
 require("../inc/fonction.php");
-$departement =  get_Employees_dep($_GET["dept_no"]); ?>
+$departement = get_Employees_dep($_GET["dept_no"]);
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -12,28 +13,27 @@ $departement =  get_Employees_dep($_GET["dept_no"]); ?>
 </head>
 
 <body>
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Employees in Department</h1>
-        <table class="table table-bordered table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>Employee No</th>
-                    <th>First Name</th>
-                    <th>Department Name</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($departement as $huhu) { ?>
-                    <tr>
-
-                        <td> <a href="fiche_employees.php?emp_no=<?= $huhu["emp_no"]; ?>" class="text-decoration-none"><?= $huhu["emp_no"]; ?> </a></td>
-
-                        <td><?= $huhu["first_name"]; ?></td>
-                        <td><?= $huhu["dept_name"]; ?></td>
-                    </tr>
-                <?php } ?>
-            </tbody>
-        </table>
+    <?php
+    $numact = 1;
+    include("../assets/include/header.php"); ?>
+    <div class="container py-5">
+        <h1 class="text-center mb-5">Employees in <?= $departement[0]["dept_name"]; ?></h1>
+        <div class="row g-4">
+            <?php foreach ($departement as $huhu) { ?>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="fiche_employees.php?emp_no=<?= $huhu["emp_no"]; ?>" class="text-decoration-none">
+                                    <?= $huhu["first_name"]; ?>
+                                </a>
+                            </h5>
+                            <p class="card-text mb-1"><strong>Employee No:</strong> <?= $huhu["emp_no"]; ?></p>
+                        </div>
+                    </div>
+                </div>
+            <?php } ?>
+        </div>
     </div>
 </body>
 

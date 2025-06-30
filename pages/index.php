@@ -1,5 +1,6 @@
 <?php
 require("../inc/fonction.php");
+$numact;
 $departement =  get_Departements_Managers(); ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,6 +13,9 @@ $departement =  get_Departements_Managers(); ?>
 </head>
 
 <body>
+    <?php
+    $numact = 0;
+    include("../assets/include/header.php"); ?>
     <div class="container mt-5">
         <h1 class="text-center mb-4">Departments and Managers</h1>
         <table class="table table-bordered table-striped">
@@ -37,7 +41,7 @@ $departement =  get_Departements_Managers(); ?>
             </tbody>
         </table>
     </div>
-    
+
 </body>
 
 </html>
