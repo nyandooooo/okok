@@ -42,17 +42,31 @@ function get_Departements_Managers1()
 ///////////////////////////////////////////
 
 
-function get_Employees_dep($code)
+function get_Employees_dep($code,$isa)
 {
     $sql = "SELECT employees.emp_no, employees.first_name, departments.dept_no, departments.dept_name 
     FROM employees 
     JOIN dept_emp ON employees.emp_no = dept_emp.emp_no 
     JOIN departments ON dept_emp.dept_no = departments.dept_no 
-    WHERE departments.dept_no = '$code' ORDER BY employees.first_name ASC;";
+    WHERE departments.dept_no = '$code'  ORDER BY employees.first_name ASC LIMIT $isa,50;";
 
     return tab($sql);
 }
 
+function count_Employees_dep($code, $search = '')
+{
+    $sql = "SELECT COUNT(*) as total FROM employees 
+            JOIN dept_emp ON employees.emp_no = dept_emp.emp_no 
+            JOIN departments ON dept_emp.dept_no = departments.dept_no 
+            WHERE departments.dept_no = '$code'";
+
+    if (!empty($search)) {
+        $sql .= " AND (employees.first_name LIKE '%$search%' OR employees.last_name LIKE '%$search%')";
+    }
+
+    $result = tab($sql);
+    return $result[0]['total'] ?? 0;
+}
 
 function get_Fiche_Employees($code)
 {

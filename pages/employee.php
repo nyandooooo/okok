@@ -1,373 +1,380 @@
 <?php
 require("../inc/fonction.php");
-$departement = get_Employees_dep($_GET["dept_no"]);
+
+// Paramètres de pagination
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit = 8; // Nombre d'employés par page
+$offset = ($page - 1) * $limit;
+
+// Paramètre de recherche
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+// Récupération des employés (vous devrez adapter cette fonction pour inclure pagination et recherche)
+$departement = get_Employees_dep($_GET["dept_no"], $offset, $limit, $search);
+$total_employees = count_Employees_dep($_GET["dept_no"], $search); // Fonction pour compter le total
+$total_pages = ceil($total_employees / $limit);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employés - <?= htmlspecialchars($departement[0]["dept_name"]); ?></title>
+    <title>Employés - <?= htmlspecialchars($departement[0]["dept_name"] ?? 'Département'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            --surface-color: #ffffff;
-            --background-color: #f8fafc;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --border-color: #e2e8f0;
-            --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --shadow-strong: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--background-color);
-            color: var(--text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
         }
 
-        /* Header Section */
-        .header-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 4rem 0 6rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="white" opacity="0.1"><path d="M0,50 Q250,0 500,50 T1000,50 L1000,100 L0,100 Z"/></svg>');
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: bottom;
-        }
-
-        .header-content {
-            position: relative;
-            z-index: 2;
+        .header {
+            background: #fff;
+            border-bottom: 1px solid #dee2e6;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
         }
 
         .department-title {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 2rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
         }
 
-        .department-subtitle {
-            font-size: 1.25rem;
-            opacity: 0.9;
-            font-weight: 400;
+        .employee-count {
+            color: #6c757d;
+            font-size: 1rem;
         }
 
-        .stats-badge {
-            display: inline-flex;
+        .search-section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 1rem;
             align-items: center;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
+        .btn-search {
+            background: #0d6efd;
+            color: white;
+            border: none;
             padding: 0.75rem 1.5rem;
-            border-radius: 50px;
-            margin-top: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
         }
 
-        /* Main Content */
-        .main-content {
-            margin-top: -3rem;
-            position: relative;
-            z-index: 3;
+        .btn-search:hover {
+            background: #0b5ed7;
         }
 
-        /* Employee Cards */
+        .btn-clear {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-clear:hover {
+            background: #5a6268;
+        }
+
         .employee-card {
-            background: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: 1.5rem;
-            padding: 2rem;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
             text-align: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .employee-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--primary-gradient);
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
         }
 
         .employee-card:hover {
-            transform: translateY(-8px);
-            box-shadow: var(--shadow-strong);
-            border-color: transparent;
-        }
-
-        .employee-card:hover::before {
-            transform: scaleX(1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .employee-avatar {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            margin: 0 auto 1.5rem;
+            background: #6c757d;
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.75rem;
+            font-size: 1.2rem;
             font-weight: 600;
-            color: white;
-            position: relative;
-            box-shadow: var(--shadow-medium);
-        }
-
-        .employee-avatar::after {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: var(--primary-gradient);
-            border-radius: 50%;
-            z-index: -1;
+            margin: 0 auto 1rem;
         }
 
         .employee-name {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 0.5rem;
-            color: var(--text-primary);
         }
 
         .employee-name a {
-            color: inherit;
+            color: #495057;
             text-decoration: none;
-            transition: color 0.2s ease;
         }
 
         .employee-name a:hover {
-            color: #667eea;
+            color: #0d6efd;
         }
 
         .employee-id {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .employee-actions {
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .btn-view-profile {
-            background: var(--primary-gradient);
-            border: none;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 500;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s ease;
-            box-shadow: var(--shadow-light);
-        }
-
-        .btn-view-profile:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-medium);
-            color: white;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: var(--surface-color);
-            border-radius: 1.5rem;
-            border: 1px solid var(--border-color);
-            margin-top: 2rem;
-        }
-
-        .empty-state-icon {
-            font-size: 4rem;
-            color: var(--text-secondary);
+            color: #6c757d;
+            font-size: 0.9rem;
             margin-bottom: 1rem;
         }
 
-        .empty-state-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
+        .btn-profile {
+            background: #0d6efd;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-block;
         }
 
-        .empty-state-text {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
+        .btn-profile:hover {
+            background: #0b5ed7;
+            color: white;
         }
 
-        /* Responsive Design */
+        .pagination-section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+
+        .pagination-info {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #dee2e6;
+            background: #fff;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .page-btn:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .page-btn.active {
+            background: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+
+        .page-btn.disabled {
+            background: #e9ecef;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
         @media (max-width: 768px) {
-            .department-title {
-                font-size: 2rem;
+            .search-form {
+                flex-direction: column;
+                align-items: stretch;
             }
             
-            .employee-card {
-                padding: 1.5rem;
-            }
-            
-            .employee-avatar {
-                width: 60px;
-                height: 60px;
-                font-size: 1.25rem;
-            }
-            
-            .header-section {
-                padding: 2rem 0 4rem;
-            }
-            
-            .main-content {
-                margin-top: -2rem;
+            .pagination-controls {
+                justify-content: center;
             }
         }
-
-        /* Animation pour l'apparition des cartes */
-        .employee-card {
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Styles pour différents avatars */
-        .avatar-variant-1 { background: var(--primary-gradient); }
-        .avatar-variant-2 { background: var(--secondary-gradient); }
-        .avatar-variant-3 { background: var(--success-gradient); }
-        .avatar-variant-4 { background: var(--warning-gradient); }
     </style>
 </head>
 <body>
-    <!-- Header Section -->
-    <section class="header-section">
+    <!-- Header -->
+    <div class="header">
         <div class="container">
-            <div class="header-content text-center">
-                <h1 class="department-title">
-                    <i class="bi bi-building me-3"></i>
-                    <?= htmlspecialchars($departement[0]["dept_name"]); ?>
-                </h1>
-                <p class="department-subtitle">
-                    Découvrez l'équipe talentueuse de ce département
-                </p>
-                <div class="stats-badge">
-                    <i class="bi bi-people-fill me-2"></i>
-                    <span><?= count($departement); ?> employé<?= count($departement) > 1 ? 's' : ''; ?></span>
-                </div>
-            </div>
+            <h1 class="department-title">
+                <i class="bi bi-building me-2"></i>
+                <?= htmlspecialchars($departement[0]["dept_name"] ?? 'Département'); ?>
+            </h1>
+            <p class="employee-count">
+                <?= $total_employees; ?> employé<?= $total_employees > 1 ? 's' : ''; ?> au total
+            </p>
         </div>
-    </section>
+    </div>
 
-    <!-- Main Content -->
-    <section class="main-content">
-        <div class="container">
-            <?php if (!empty($departement)) : ?>
-                <div class="row g-4">
-                    <?php 
-                    $avatarVariants = ['avatar-variant-1', 'avatar-variant-2', 'avatar-variant-3', 'avatar-variant-4'];
-                    foreach ($departement as $index => $employee) {
-                        // Génère les initiales pour l'avatar
-                        $initials = strtoupper(substr($employee["first_name"], 0, 1));
-                        if (!empty($employee["last_name"])) {
-                            $initials .= strtoupper(substr($employee["last_name"], 0, 1));
-                        }
-                        
-                        // Sélectionne une variante d'avatar
-                        $avatarClass = $avatarVariants[$index % count($avatarVariants)];
-                    ?>
-                        <div class="col-sm-6 col-lg-4 col-xl-3">
-                            <div class="employee-card">
-                                <div class="employee-avatar <?= $avatarClass ?>">
-                                    <?= $initials ?>
-                                </div>
-                                
-                                <h3 class="employee-name">
-                                    <a href="fiche_employees.php?emp_no=<?= $employee["emp_no"]; ?>">
-                                        <?= htmlspecialchars($employee["first_name"]); ?> 
-                                        <?= htmlspecialchars($employee["last_name"] ?? ""); ?>
-                                    </a>
-                                </h3>
-                                
-                                <div class="employee-id">
-                                    <i class="bi bi-person-badge"></i>
-                                    <span>ID: <?= $employee["emp_no"]; ?></span>
-                                </div>
-                                
-                                <div class="employee-actions">
-                                    <a href="fiche_employees.php?emp_no=<?= $employee["emp_no"]; ?>" class="btn-view-profile">
-                                        <i class="bi bi-eye"></i>
-                                        Voir le profil
-                                    </a>
-                                </div>
+    <div class="container">
+        <!-- Recherche -->
+        <div class="search-section">
+            <form class="search-form" method="GET">
+                <input type="hidden" name="dept_no" value="<?= htmlspecialchars($_GET["dept_no"] ?? ''); ?>">
+                <input type="text" 
+                       name="search" 
+                       class="search-input" 
+                       placeholder="Rechercher un employé par nom ou prénom..."
+                       value="<?= htmlspecialchars($search); ?>">
+                <button type="submit" class="btn-search">
+                    <i class="bi bi-search"></i> Rechercher
+                </button>
+                <?php if (!empty($search)) : ?>
+                    <a href="?dept_no=<?= htmlspecialchars($_GET["dept_no"]); ?>" class="btn-clear">
+                        <i class="bi bi-x"></i> Effacer
+                    </a>
+                <?php endif; ?>
+            </form>
+        </div>
+
+        <!-- Liste des employés -->
+        <?php if (!empty($departement)) : ?>
+            <div class="row">
+                <?php foreach ($departement as $employee) : 
+                    $initials = strtoupper(substr($employee["first_name"], 0, 1));
+                    if (!empty($employee["last_name"])) {
+                        $initials .= strtoupper(substr($employee["last_name"], 0, 1));
+                    }
+                ?>
+                    <div class="col-sm-6 col-lg-4 col-xl-3">
+                        <div class="employee-card">
+                            <div class="employee-avatar">
+                                <?= $initials ?>
                             </div>
+                            
+                            <h3 class="employee-name">
+                                <a href="fiche_employees.php?emp_no=<?= $employee["emp_no"]; ?>">
+                                    <?= htmlspecialchars($employee["first_name"]); ?> 
+                                    <?= htmlspecialchars($employee["last_name"] ?? ""); ?>
+                                </a>
+                            </h3>
+                            
+                            <div class="employee-id">
+                                ID: <?= $employee["emp_no"]; ?>
+                            </div>
+                            
+                            <a href="fiche_employees.php?emp_no=<?= $employee["emp_no"]; ?>" class="btn-profile">
+                                Voir le profil
+                            </a>
                         </div>
-                    <?php } ?>
-                </div>
-            <?php else : ?>
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="bi bi-person-x"></i>
                     </div>
-                    <h2 class="empty-state-title">Aucun employé trouvé</h2>
-                    <p class="empty-state-text">
-                        Ce département ne contient actuellement aucun employé.
-                    </p>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- Pagination -->
+            <?php if ($total_pages > 1) : ?>
+                <div class="pagination-section">
+                    <div class="pagination-info">
+                        Page <?= $page; ?> sur <?= $total_pages; ?>
+                        (<?= $offset + 1; ?>-<?= min($offset + $limit, $total_employees); ?> sur <?= $total_employees; ?> employés)
+                    </div>
+                    
+                    <div class="pagination-controls">
+                        <!-- Bouton Précédent -->
+                        <?php if ($page > 1) : ?>
+                            <a href="?dept_no=<?= htmlspecialchars($_GET["dept_no"]); ?>&page=<?= $page - 1; ?><?= !empty($search) ? '&search=' . urlencode($search) : ''; ?>" 
+                               class="page-btn">
+                                <i class="bi bi-chevron-left"></i> Précédent
+                            </a>
+                        <?php else : ?>
+                            <span class="page-btn disabled">
+                                <i class="bi bi-chevron-left"></i> Précédent
+                            </span>
+                        <?php endif; ?>
+
+                        <!-- Numéros de pages -->
+                        <?php
+                        $start_page = max(1, $page - 2);
+                        $end_page = min($total_pages, $page + 2);
+                        
+                        for ($i = $start_page; $i <= $end_page; $i++) :
+                        ?>
+                            <a href="?dept_no=<?= htmlspecialchars($_GET["dept_no"]); ?>&page=<?= $i; ?><?= !empty($search) ? '&search=' . urlencode($search) : ''; ?>" 
+                               class="page-btn <?= $i == $page ? 'active' : ''; ?>">
+                                <?= $i; ?>
+                            </a>
+                        <?php endfor; ?>
+
+                        <!-- Bouton Suivant -->
+                        <?php if ($page < $total_pages) : ?>
+                            <a href="?dept_no=<?= htmlspecialchars($_GET["dept_no"]); ?>&page=<?= $page + 1; ?><?= !empty($search) ? '&search=' . urlencode($search) : ''; ?>" 
+                               class="page-btn">
+                                Suivant <i class="bi bi-chevron-right"></i>
+                            </a>
+                        <?php else : ?>
+                            <span class="page-btn disabled">
+                                Suivant <i class="bi bi-chevron-right"></i>
+                            </span>
+                        <?php endif; ?>
+                    </div>
                 </div>
             <?php endif; ?>
-        </div>
-    </section>
+
+        <?php else : ?>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-person-x"></i>
+                </div>
+                <h2>Aucun employé trouvé</h2>
+                <p>
+                    <?php if (!empty($search)) : ?>
+                        Aucun employé ne correspond à votre recherche "<?= htmlspecialchars($search); ?>".
+                    <?php else : ?>
+                        Ce département ne contient actuellement aucun employé.
+                    <?php endif; ?>
+                </p>
+            </div>
+        <?php endif; ?>
+    </div>
 </body>
 </html>
