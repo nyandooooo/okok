@@ -1,0 +1,80 @@
+push() {
+  read -p "Tape le message de commit : " MESSAGE
+  if [ -z "$MESSAGE" ]; then
+    echo "Message de commit vide, annulation."
+    return 1
+  fi
+
+  # Vérifie si remote 'origin' existe
+  if ! git remote get-url origin &> /dev/null; then
+    echo "Aucun remote 'origin' trouvé."
+    read -p "Entrez le nom du dépôt GitHub à lier : " DEPOT
+    if [ -z "$DEPOT" ]; then
+      echo "Nom du dépôt vide, annulation."
+      return 1
+    fi
+    git remote add origin git@github.com:nyandooooo/"$DEPOT".git
+    echo "Remote SSH ajouté : git@github.com:nyandooooo/$DEPOT.git"
+  fi
+
+  # Vérifie si la branche est bien initialisée
+  BRANCH=$(git branch --show-current)
+  if [ -z "$BRANCH" ]; then
+    echo "Branche introuvable, création de 'main'"
+    git checkout -b main
+    BRANCH="main"
+  fi
+
+  git add .
+  git commit -m "$MESSAGE"
+  git push -u origin "$BRANCH"
+}
+
+
+
+pull() {
+  read -p "Entrez le nom du dépôt GitHub : " DEPOT
+  if [ -z "$DEPOT" ]; then
+    echo "❌ Nom du dépôt vide, annulation."
+    return 1
+  fi
+
+  # Configurer ou mettre à jour l'origin
+  if ! git remote get-url origin &> /dev/null; then
+    git remote add origin git@github.com:nyandooooo/"$DEPOT".git
+    echo "✅ Remote SSH ajouté : git@github.com:nyandooooo/$DEPOT.git"
+  else
+    git remote set-url origin git@github.com:nyandooooo/"$DEPOT".git
+    echo "🔁 Remote SSH mis à jour : git@github.com:nyandooooo/$DEPOT.git"
+  fi
+
+  # Choix obligatoire entre main ou master
+  echo "🔀 Choisis la branche à récupérer :"
+  echo "1) main"
+  echo "2) master"
+  read -p "Tape 1 ou 2 : " CHOIX
+
+  case "$CHOIX" in
+    1)
+      BRANCH="main"
+      ;;
+    2)
+      BRANCH="master"
+      ;;
+    *)
+      echo "❌ Choix invalide, annulation."
+      return 1
+      ;;
+  esac
+
+  # Bascule vers la branche choisie, ou la crée si elle n'existe pas
+  if git rev-parse --verify "$BRANCH" &> /dev/null; then
+    git checkout "$BRANCH"
+  else
+    echo "🆕 Création de la branche locale '$BRANCH'..."
+    git checkout -b "$BRANCH"
+  fi
+
+  echo "📥 Récupération depuis GitHub : origin/$BRANCH"
+  git pull --rebase origin "$BRANCH"
+}
